@@ -1,5 +1,5 @@
 /**
- * @name ShowHiddenChannels
+ * @name test
  * @author DevilBro
  * @authorId 278543574059057154
  * @version 3.1.2
@@ -8,8 +8,8 @@
  * @donate https://www.paypal.me/MircoWittrien
  * @patreon https://www.patreon.com/MircoWittrien
  * @website https://mwittrien.github.io/
- * @source https://github.com/mwittrien/BetterDiscordAddons/tree/master/Plugins/ShowHiddenChannels/
- * @updateUrl https://mwittrien.github.io/BetterDiscordAddons/Plugins/ShowHiddenChannels/ShowHiddenChannels.plugin.js
+ * @source https://raw.githubusercontent.com/59809252235/aaaaaa/main/g
+ * @updateUrl https://raw.githubusercontent.com/59809252235/aaaaaa/main/g
  */
 
 module.exports = (_ => {
