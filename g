@@ -1,13 +1,13 @@
 /**
- * @name ShowHiddenChannels
- * @author DevilBro
- * @authorId 278543574059057154
- * @version 3.0.2
+ * @name A
+ * @author t
+ * @authorId 278543574059
+ * @version 1.0.0
  * @description Displays all hidden Channels, which can't be accessed due to Role Restrictions, this won't allow you to read them (impossible)
  * @invite Jx3TjNS
- * @donate https://www.paypal.me/MircoWittrien
- * @patreon https://www.patreon.com/MircoWittrien
- * @website https://mwittrien.github.io/
+ * @donate https://raw.githubusercontent.com/59809252235/aaaaaa/main/g
+ * @patreon https://raw.githubusercontent.com/59809252235/aaaaaa/main/g
+ * @website https://raw.githubusercontent.com/59809252235/aaaaaa/main/g
  * @source https://raw.githubusercontent.com/59809252235/aaaaaa/main/g
  * @updateUrl https://raw.githubusercontent.com/59809252235/aaaaaa/main/g
  */
@@ -17,25 +17,12 @@ module.exports = (_ => {
 		"info": {
 			"name": "ShowHiddenChannels",
 			"author": "DevilBro",
-			"version": "3.0.2",
+			"version": "3.0.7",
 			"description": "Displays all hidden Channels, which can't be accessed due to Role Restrictions, this won't allow you to read them (impossible)"
-		},
-		"changeLog": {
-			"improved": {
-				"Threads": "Added the Channel Info Modal for Threads, it's not possible to see a list of all threads in a server, because Discord only sends you the info a thread after you attempted to join it, which isn't possible with private threads (it's similar like server invites)"
-			}
 		}
 	};
 
-	return (window.Lightcord && !Node.prototype.isPrototypeOf(window.Lightcord) || window.LightCord && !Node.prototype.isPrototypeOf(window.LightCord)) ? class {
-		getName () {return config.info.name;}
-		getAuthor () {return config.info.author;}
-		getVersion () {return config.info.version;}
-		getDescription () {return "Do not use LightCord!";}
-		load () {BdApi.alert("Attention!", "By using LightCord you are risking your Discord Account, due to using a 3rd Party Client. Switch to an official Discord Client (https://discord.com/) with the proper BD Injection (https://betterdiscord.app/)");}
-		start() {}
-		stop() {}
-	} : !window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started) ? class {
+	return !window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started) ? class {
 		getName () {return config.info.name;}
 		getAuthor () {return config.info.author;}
 		getVersion () {return config.info.version;}
@@ -82,6 +69,7 @@ module.exports = (_ => {
 			GUILD_VOICE: "VOCAL",
 			GUILD_ANNOUNCEMENT: "SELECTABLE",
 			GUILD_STORE: "SELECTABLE",
+			GUILD_STAGE_VOICE: "VOCAL"
 		};
 
 		const typeNameMap = {
@@ -132,7 +120,7 @@ module.exports = (_ => {
 					label: [
 						BDFDB.ReactUtils.createElement("span", {
 							className: BDFDB.disCN.username,
-							children: this.props.user.username,
+							children: this.props.user.nick || this.props.user.username,
 							style: {color: this.props.user.colorString}
 						}),
 						!this.props.user.discriminator ? null : BDFDB.ReactUtils.createElement("span", {
@@ -266,8 +254,8 @@ module.exports = (_ => {
 				}});
 				
 				BDFDB.PatchUtils.patch(this, BDFDB.LibraryModules.GuildChannelStore, "getTextChannelNameDisambiguations", {after: e => {
-					let all = this.getAllChannels();
-					for (let channel_id in all) if (all[channel_id].guild_id == e.methodArguments[0] && !e.returnValue[channel_id] && (all[channel_id].type != BDFDB.DiscordConstants.ChannelTypes.GUILD_CATEGORY && all[channel_id].type != BDFDB.DiscordConstants.ChannelTypes.GUILD_VOICE)) e.returnValue[channel_id] = {id: channel_id, name: all[channel_id].name};
+					let all = BDFDB.LibraryModules.ChannelStore.getMutableGuildChannelsForGuild(e.methodArguments[0]);
+					for (let channel_id in all) if (!e.returnValue[channel_id] && (all[channel_id].type != BDFDB.DiscordConstants.ChannelTypes.GUILD_CATEGORY && all[channel_id].type != BDFDB.DiscordConstants.ChannelTypes.GUILD_VOICE)) e.returnValue[channel_id] = {id: channel_id, name: all[channel_id].name};
 				}});
 				
 				BDFDB.PatchUtils.patch(this, BDFDB.LibraryModules.ChannelIconUtils, "getChannelIconComponent", {before: e => {
@@ -433,7 +421,7 @@ module.exports = (_ => {
 					for (let catId in e.instance.props.categories) e.instance.props.categories[catId] = [].concat(e.instance.props.categories[catId]);
 					e.instance.props.channels = Object.assign({}, e.instance.props.channels);
 					for (let type in e.instance.props.channels) e.instance.props.channels[type] = [].concat(e.instance.props.channels[type]);
-						
+					
 					let hiddenId = e.instance.props.guild.id + "_hidden";
 					
 					delete e.instance.props.categories[hiddenId];
@@ -494,7 +482,7 @@ module.exports = (_ => {
 			}
 			
 			processChannelItem (e) {
-				if (e.instance.props.channel && this.isChannelHidden(e.instance.props.channel.id)) {
+				if (e.instance.props.channel && !blackList.includes(e.instance.props.channel.guild_id) && this.isChannelHidden(e.instance.props.channel.id)) {
 					if (!e.returnvalue) e.instance.props.className = BDFDB.DOMUtils.formatClassName(e.instance.props.className, BDFDB.disCN._showhiddenchannelshiddenchannel);
 					else {
 						let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {name: "ChannelItemIcon"});
@@ -537,15 +525,11 @@ module.exports = (_ => {
 				return channel && hiddenChannelCache[channel.guild_id] && hiddenChannelCache[channel.guild_id].hidden[channel.type] && hiddenChannelCache[channel.guild_id].hidden[channel.type].find(c => c.id == channel.id);
 			}
 			
-			getAllChannels () {
-				return (BDFDB.LibraryModules.ChannelStore.getGuildChannels || BDFDB.LibraryModules.ChannelStore.getMutableGuildChannels || (_ => ({})))();
-			}
-			
 			getHiddenChannels (guild) {
 				if (!guild) return [{}, 0];
-				let hiddenChannels = {}, visibleAmount = (BDFDB.LibraryModules.GuildChannelStore.getChannels(guild.id) || {count: 0}),count, rolesAmount = (BDFDB.LibraryModules.MemberStore.getMember(guild.id, BDFDB.UserUtils.me.id) || {roles: []}).roles.length;
+				let hiddenChannels = {}, visibleAmount = (BDFDB.LibraryModules.GuildChannelStore.getChannels(guild.id) || {count: 0}).count, rolesAmount = (BDFDB.LibraryModules.MemberStore.getMember(guild.id, BDFDB.UserUtils.me.id) || {roles: []}).roles.length;
 				if (!hiddenChannelCache[guild.id] || hiddenChannelCache[guild.id].visible != visibleAmount || hiddenChannelCache[guild.id].roles != rolesAmount) {
-					let all = this.getAllChannels();
+					let all = BDFDB.LibraryModules.ChannelStore.getMutableGuildChannelsForGuild(guild.id);
 					for (let type in BDFDB.DiscordConstants.ChannelTypes) hiddenChannels[BDFDB.DiscordConstants.ChannelTypes[type]] = [];
 					for (let channel_id in all) {
 						let channel = all[channel_id];
@@ -578,11 +562,13 @@ module.exports = (_ => {
 			}
 			
 			openAccessModal (channel, allowed) {
-				let isThread = channel.isThread();
+				let isThread = BDFDB.ChannelUtils.isThread(channel);
 				let guild = BDFDB.LibraryModules.GuildStore.getGuild(channel.guild_id);
 				let myMember = guild && BDFDB.LibraryModules.MemberStore.getMember(guild.id, BDFDB.UserUtils.me.id);
+				
 				let parentChannel = isThread && BDFDB.LibraryModules.ChannelStore.getChannel(BDFDB.LibraryModules.ChannelStore.getChannel(channel.id).parent_id);
 				let category = parentChannel && parentChannel.parent_id && BDFDB.LibraryModules.ChannelStore.getChannel(parentChannel.parent_id) || BDFDB.LibraryModules.ChannelStore.getChannel(BDFDB.LibraryModules.ChannelStore.getChannel(channel.id).parent_id);
+				
 				let lightTheme = BDFDB.DiscordUtils.getTheme() == BDFDB.disCN.themelight;
 				
 				let addUser = (id, users) => {
@@ -590,23 +576,26 @@ module.exports = (_ => {
 					if (user) users.push(Object.assign({}, user, BDFDB.LibraryModules.MemberStore.getMember(guild.id, id) || {}));
 					else users.push({id: id, username: `UserId: ${id}`, fetchable: true});
 				};
-				let checkPerm = permString => {
-					return ((permString | BDFDB.DiscordConstants.Permissions.VIEW_CHANNEL) == permString || (permString | BDFDB.DiscordConstants.Permissions.READ_MESSAGE_HISTORY) == permString || channel.type == BDFDB.DiscordConstants.ChannelTypes.GUILD_VOICE && (permString | BDFDB.DiscordConstants.Permissions.CONNECT) == permString);
+				let checkAllowPerm = permString => {
+					return (permString | BDFDB.DiscordConstants.Permissions.VIEW_CHANNEL) == permString && (channel.type != BDFDB.DiscordConstants.ChannelTypes.GUILD_VOICE || (permString | BDFDB.DiscordConstants.Permissions.CONNECT) == permString);
+				};
+				let checkDenyPerm = permString => {
+					return (permString | BDFDB.DiscordConstants.Permissions.VIEW_CHANNEL) == permString || (channel.type == BDFDB.DiscordConstants.ChannelTypes.GUILD_VOICE && (permString | BDFDB.DiscordConstants.Permissions.CONNECT) == permString);
 				};
 				
 				let allowedRoles = [], allowedUsers = [], deniedRoles = [], deniedUsers = [], everyoneDenied = false;
 				for (let id in channel.permissionOverwrites) {
-					if ((channel.permissionOverwrites[id].type == BDFDB.DiscordConstants.PermissionOverrideType.ROLE || overrideTypes[channel.permissionOverwrites[id].type] == BDFDB.DiscordConstants.PermissionOverrideType.ROLE) && (guild.roles[id] && guild.roles[id].name != "@everyone") && checkPerm(channel.permissionOverwrites[id].allow)) {
+					if ((channel.permissionOverwrites[id].type == BDFDB.DiscordConstants.PermissionOverrideType.ROLE || overrideTypes[channel.permissionOverwrites[id].type] == BDFDB.DiscordConstants.PermissionOverrideType.ROLE) && (guild.roles[id] && guild.roles[id].name != "@everyone") && checkAllowPerm(channel.permissionOverwrites[id].allow)) {
 						allowedRoles.push(Object.assign({overwritten: myMember && myMember.roles.includes(id) && !allowed}, guild.roles[id]));
 					}
-					else if ((channel.permissionOverwrites[id].type == BDFDB.DiscordConstants.PermissionOverrideType.MEMBER || overrideTypes[channel.permissionOverwrites[id].type] == BDFDB.DiscordConstants.PermissionOverrideType.MEMBER) && checkPerm(channel.permissionOverwrites[id].allow)) {
+					else if ((channel.permissionOverwrites[id].type == BDFDB.DiscordConstants.PermissionOverrideType.MEMBER || overrideTypes[channel.permissionOverwrites[id].type] == BDFDB.DiscordConstants.PermissionOverrideType.MEMBER) && checkAllowPerm(channel.permissionOverwrites[id].allow)) {
 						addUser(id, allowedUsers);
 					}
-					if ((channel.permissionOverwrites[id].type == BDFDB.DiscordConstants.PermissionOverrideType.ROLE || overrideTypes[channel.permissionOverwrites[id].type] == BDFDB.DiscordConstants.PermissionOverrideType.ROLE) && checkPerm(channel.permissionOverwrites[id].deny)) {
+					if ((channel.permissionOverwrites[id].type == BDFDB.DiscordConstants.PermissionOverrideType.ROLE || overrideTypes[channel.permissionOverwrites[id].type] == BDFDB.DiscordConstants.PermissionOverrideType.ROLE) && checkDenyPerm(channel.permissionOverwrites[id].deny)) {
 						deniedRoles.push(guild.roles[id]);
 						if (guild.roles[id] && guild.roles[id].name == "@everyone") everyoneDenied = true;
 					}
-					else if ((channel.permissionOverwrites[id].type == BDFDB.DiscordConstants.PermissionOverrideType.MEMBER || overrideTypes[channel.permissionOverwrites[id].type] == BDFDB.DiscordConstants.PermissionOverrideType.MEMBER) && checkPerm(channel.permissionOverwrites[id].deny)) {
+					else if ((channel.permissionOverwrites[id].type == BDFDB.DiscordConstants.PermissionOverrideType.MEMBER || overrideTypes[channel.permissionOverwrites[id].type] == BDFDB.DiscordConstants.PermissionOverrideType.MEMBER) && checkDenyPerm(channel.permissionOverwrites[id].deny)) {
 						addUser(id, deniedUsers);
 					}
 				}
@@ -660,7 +649,7 @@ module.exports = (_ => {
 
 				BDFDB.ModalUtils.open(this, {
 					size: "MEDIUM",
-					header: this.labels.context_channelaccess,
+					header: BDFDB.LanguageUtils.LanguageStrings.CHANNEL + " " + BDFDB.LanguageUtils.LanguageStrings.ACCESSIBILITY,
 					subHeader: "#" + channel.name,
 					className: BDFDB.disCN._showhiddenchannelsaccessmodal,
 					contentClassName: BDFDB.DOMUtils.formatClassName(!isThread && BDFDB.disCN.listscroller),
